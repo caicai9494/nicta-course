@@ -288,7 +288,10 @@ lengthGT4 _ = False
 reverse ::
   List a
   -> List a
-reverse = foldRight (:.) Nil 
+--reverse Nil = Nil 
+--reverse (x :. xs) = let la = reverse xs in la ++ (x :. Nil)
+--reverse = foldRight (\x acc -> acc ++ (x :. Nil)) Nil 
+reverse = foldLeft (flip (:.)) Nil
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
@@ -302,8 +305,7 @@ produce ::
   (a -> a)
   -> a
   -> List a
-produce =
-  error "todo: Course.List#produce"
+produce f a = a :. produce f (f a)
 
 -- | Do anything other than reverse a list.
 -- Is it even possible?
@@ -317,8 +319,7 @@ produce =
 notReverse ::
   List a
   -> List a
-notReverse =
-  error "todo: Is it even possible?"
+notReverse = map id  -- cheating =) 
 
 ---- End of list exercises
 
