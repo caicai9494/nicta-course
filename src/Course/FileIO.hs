@@ -63,8 +63,9 @@ main ::
   IO ()
 main = do
   args <- getArgs
-  run $ headOr Nil args
-
+  case args of
+    file :. Nil -> run file
+    _ -> putStrLn "usage: runhaskell course.hs <filename>"
 
 type FilePath =
   Chars
@@ -82,12 +83,13 @@ run file = do
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles = sequence . map getFile 
+getFiles = sequence . (<$>) getFile 
 
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile file = readFile file >>= (\cs -> return (file, cs)) 
+--getFile file = readFile file >>= (\cs -> return (file, cs)) 
+getFile = lift2 (<$>) (,) readFile -- this is elegant
 
 printFiles ::
   List (FilePath, Chars)
