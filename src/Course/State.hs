@@ -34,13 +34,13 @@ newtype State s a =
 -- | Implement the `Functor` instance for `State s`.
 -- >>> runState ((+1) <$> pure 0) 0
 -- (1,0)
+
 instance Functor (State s) where
   (<$>) ::
     (a -> b)
     -> State s a
     -> State s b
-  (<$>) =
-      error "todo: Course.State#(<$>)"
+  f <$> State k = State $ \s -> let (a, s') = k s in (f a, s')    
 
 -- | Implement the `Applicative` instance for `State s`.
 --
@@ -57,14 +57,16 @@ instance Applicative (State s) where
   pure ::
     a
     -> State s a
-  pure =
-    error "todo: Course.State pure#instance (State s)"
+  pure a = State $ \s -> (a, s)
+
   (<*>) ::
     State s (a -> b)
     -> State s a
     -> State s b 
-  (<*>) =
-    error "todo: Course.State (<*>)#instance (State s)"
+  State f <*> State a = State $ (\s -> 
+    let (f', s') = f s in 
+      let (a', s'') = a s' in (f' a', s''))
+                           
 
 -- | Implement the `Bind` instance for `State s`.
 --
@@ -78,8 +80,8 @@ instance Monad (State s) where
     (a -> State s b)
     -> State s a
     -> State s b
-  (=<<) =
-    error "todo: Course.State (=<<)#instance (State s)"
+  f =<< State a = State (\s -> let (a', s') = a s in
+    runState (f a') s') 
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
 --
@@ -88,8 +90,7 @@ exec ::
   State s a
   -> s
   -> s
-exec =
-  error "todo: Course.State#exec"
+exec sa s = snd $ runState sa s 
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
@@ -98,8 +99,7 @@ eval ::
   State s a
   -> s
   -> a
-eval =
-  error "todo: Course.State#eval"
+eval sa s = fst $ runState sa s
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -107,8 +107,7 @@ eval =
 -- (0,0)
 get ::
   State s s
-get =
-  error "todo: Course.State#get"
+get = State $ \x -> (x, x)
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
@@ -117,8 +116,7 @@ get =
 put ::
   s
   -> State s ()
-put =
-  error "todo: Course.State#put"
+put s = State $ \_ -> ((), s)
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.
@@ -126,7 +124,7 @@ put =
 --
 -- Note the similarity of the type signature to List#find
 -- where the effect appears in every return position:
---   find ::  (a ->   Bool) -> List a ->    Optional a
+--   find ::  (a ->   Bool) -> List a ->    Optional a 
 --   findM :: (a -> f Bool) -> List a -> f (Optional a)
 --
 -- >>> let p x = (\s -> (const $ pure (x == 'c')) =<< put (1+s)) =<< get in runState (findM p $ listh ['a'..'h']) 0
@@ -137,10 +135,9 @@ put =
 findM ::
   Monad f =>
   (a -> f Bool)
-  -> List a
+  -> List a -- List (f a)
   -> f (Optional a)
-findM =
-  error "todo: Course.State#findM"
+findM = foldRight 
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
