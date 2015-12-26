@@ -135,8 +135,8 @@ put s = State $ \_ -> ((), s)
 findM ::
   Monad f =>
   (a -> f Bool)
-  -> List a -- List (f Bool)
-  -> f (Optional a)                                    --f Bool
+  -> List a 
+  -> f (Optional a)                                   
 findM _ Nil = return Empty 
 findM p (x :. xs) = (\b -> if b then return $ Full x else (findM p xs)) =<< p x
 
@@ -152,11 +152,17 @@ firstRepeat ::
   List a
   -> Optional a
 firstRepeat Nil = Empty
-firstRepeat (x :. xs) = do
-  ret <- findM (\y -> if x==y then Full True else Empty) xs
-  case ret of 
-    Empty -> firstRepeat xs 
-    Full _ -> ret
+firstRepeat xs = let (ret, remainder) = runState nextFind xs in
+                 ret <+> firstRepeat remainder
+                   
+nextFind :: (Ord a) => State (List a) (Optional a)
+nextFind = do xs <- get 
+              case xs of 
+                  Nil -> do put Nil  
+                            return Empty
+                  (x:.xs') -> do put xs'
+                                 return $ find (==x) xs'
+             
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -168,8 +174,11 @@ distinct ::
   Ord a =>
   List a
   -> List a
-distinct =
-  error "todo: Course.State#distinct"
+distinct Nil = Nil
+distinct lst@(x:.xs) = let (ret, remainder) = runState nextFind lst in
+                       case ret of
+                         Empty -> x :. distinct xs
+                         Full _ -> distinct xs
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
